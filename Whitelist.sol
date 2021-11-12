@@ -1,22 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Whitelist
  * @author Alberto Cuesta Canada
  * @dev Implements a simple whitelist of addresses.
  */
-contract Whitelist is Ownable {
+contract Whitelist {
     event MemberAdded(address member);
     event MemberRemoved(address member);
-
+    address public owner;
     mapping (address => bool) members;
 
     /**
      * @dev The contract constructor.
      */
-    constructor() public Ownable() {
+    constructor(address _owner) {
+        owner = _owner;
+    }
+
+    function setOwner(address _new_owner) public {
+        require(
+            msg.sender == owner,
+            "Caller is not the owner."
+        );
+        owner = _new_owner;
     }
 
     /**
@@ -37,15 +45,31 @@ contract Whitelist is Ownable {
      */
     function addMember(address _member)
         public
-        onlyOwner
     {
         require(
             !isMember(_member),
             "Address is member already."
         );
+        require(
+            msg.sender == owner,
+            "Caller is not the owner."
+        );
 
         members[_member] = true;
         emit MemberAdded(_member);
+    }
+
+    function addMembers(address[] memory _members)
+        public
+    {
+        require(
+            msg.sender == owner,
+            "Caller is not the owner."
+        );
+        for (uint i=0; i<_members.length; i++) {
+            members[_members[i]] = true;
+            emit MemberAdded(_members[i]);
+        }
     }
 
     /**
@@ -54,11 +78,14 @@ contract Whitelist is Ownable {
      */
     function removeMember(address _member)
         public
-        onlyOwner
     {
         require(
             isMember(_member),
             "Not member of whitelist."
+        );
+        require(
+            msg.sender == owner,
+            "Caller is not the owner."
         );
 
         delete members[_member];
